@@ -63,9 +63,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
 
     // Dashboard components
     private JPanel dashboardPanel;
-    private JLabel studentCountLabel;
-    private JLabel classNameLabel;
-    private JLabel upcomingEventsLabel;
 
     // Students tab components
     private JPanel studentsPanel;
@@ -75,7 +72,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
     private JButton editStudentButton;
     private JButton deleteStudentButton;
     private JButton refreshStudentsButton;
-    private JTextField searchStudentField;
 
     // Grades tab components
     private JPanel gradesPanel;
@@ -96,7 +92,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
     // Homework tab components
     private JPanel homeworkPanel;
     private JButton addHomeworkButton;
-    private JButton viewHomeworkButton;
 
     // Settings components
     private JPanel settingsPanel;
@@ -485,7 +480,7 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         actionsPanel.setOpaque(false);
 
         actionsPanel.add(createActionButton("Add Student", e -> {
-            AddStudentForm form = new AddStudentForm();
+            AddStudentForm form = new AddStudentForm(classId);
             form.setVisible(true);
         }));
 
@@ -495,12 +490,12 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         }));
 
         actionsPanel.add(createActionButton("Add Grade", e -> {
-            AddGradeForm form = new AddGradeForm(classId);
+            AddGradeForm form = new AddGradeForm(classId, teacher);
             form.setVisible(true);
         }));
 
         actionsPanel.add(createActionButton("Assign Homework", e -> {
-            HomeworkForm form = new HomeworkForm(classId);
+            HomeworkForm form = new HomeworkForm(classId, teacher, currentUser);
             form.setVisible(true);
         }));
 
@@ -536,52 +531,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         dashboardPanel.add(welcomePanel, BorderLayout.NORTH);
         dashboardPanel.add(dashboardContent, BorderLayout.CENTER);
         dashboardPanel.add(bottomPanel, BorderLayout.CENTER);
-    }
-
-    /**
-     * Creates a statistic card for the dashboard
-     *
-     * @param title The card title
-     * @param value The value to display
-     * @param iconName Icon name (not used yet, placeholder for future icon support)
-     * @return The card panel
-     */
-    private JPanel createStatCard(String title, String value, String iconName) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(CARD_COLOR);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(218, 220, 224), 1, true),
-                new EmptyBorder(20, 20, 20, 20)));
-
-        JPanel contentPanel = new JPanel(new BorderLayout(15, 0));
-        contentPanel.setOpaque(false);
-
-        // Icon placeholder (empty now, removed as requested)
-        JPanel iconPanel = new JPanel();
-        iconPanel.setPreferredSize(new Dimension(0, 0));
-        iconPanel.setOpaque(false);
-
-        // Text panel
-        JPanel textPanel = new JPanel(new GridLayout(2, 1));
-        textPanel.setOpaque(false);
-
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        valueLabel.setForeground(TEXT_COLOR);
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        titleLabel.setForeground(TEXT_SECONDARY_COLOR);
-
-        textPanel.add(valueLabel);
-        textPanel.add(titleLabel);
-
-        contentPanel.add(iconPanel, BorderLayout.WEST);
-        contentPanel.add(textPanel, BorderLayout.CENTER);
-
-        card.add(contentPanel, BorderLayout.CENTER);
-
-        return card;
     }
 
     /**
@@ -952,28 +901,8 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         addGradeButton = createActionButton("Add Grade", e -> {
-            if (studentComboBox.getSelectedIndex() > 0) {
-                // Get the student data to pass to the form
-                String selectedItem = (String) studentComboBox.getSelectedItem();
-                int studentId = studentIdMap.get(selectedItem);
-
-                // Create and configure the grade form with the selected student
-                AddGradeForm form = new AddGradeForm(classId);
-
-                // Set the selected student ID in the form (assuming the form has a method to do this)
-                // If AddGradeForm doesn't have this functionality, you'd need to modify it
-                // For now, just display information to the user
-                JOptionPane.showMessageDialog(this,
-                        "Adding grade for Student ID: " + studentId + "\n" +
-                                "Note: In a complete implementation, this would pre-select the student in the AddGradeForm.",
-                        "Add Grade", JOptionPane.INFORMATION_MESSAGE);
-
-                form.setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a student first",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            }
+            AddGradeForm form = new AddGradeForm(classId, teacher);
+            form.setVisible(true);
         });
 
         viewGradesButton = createActionButton("Refresh Grades", e -> {
@@ -1007,6 +936,45 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                         "Information", JOptionPane.INFORMATION_MESSAGE);
             }
         });
+
+        JButton editGradeButton = createActionButton("Edit Grade", e -> {
+            if (studentComboBox.getSelectedIndex() > 0) {
+                // Get the grades table
+                if (gradesTable == null) {
+                    JOptionPane.showMessageDialog(this,
+                            "Could not find grades table",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Get selected row
+                int selectedRow = gradesTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(this,
+                            "Please select a grade to edit",
+                            "No Selection", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Get grade information from the selected row
+                String subject = (String) gradesTable.getValueAt(selectedRow, 0);
+                String markStr = (String) gradesTable.getValueAt(selectedRow, 1);
+                char mark = markStr.charAt(0);
+                String comment = (String) gradesTable.getValueAt(selectedRow, 3);
+
+                // Get student ID
+                String selectedItem = (String) studentComboBox.getSelectedItem();
+                int studentId = studentIdMap.get(selectedItem);
+
+                // Open edit dialog
+                editGradeDialog(studentId, subject, mark, comment);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Please select a student first",
+                        "Information", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
         deleteGradeButton = createActionButton("Delete Grade", e -> {
             if (studentComboBox.getSelectedIndex() > 0) {
                 // Get the table from the panel
@@ -1076,11 +1044,156 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         });
         buttonPanel.add(addGradeButton);
         buttonPanel.add(viewGradesButton);
+        buttonPanel.add(editGradeButton);
         buttonPanel.add(deleteGradeButton);
         mainContent.add(buttonPanel);
 
         // Add all to the main grades panel
         gradesPanel.add(mainContent, BorderLayout.CENTER);
+    }
+
+    /**
+     * Opens a dialog to edit the selected grade
+     */
+    private void editGradeDialog(int studentId, String subject, char currentMark, String currentComment) {
+        // Create dialog
+        JDialog dialog = new JDialog(this, "Edit Grade", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        // Create content panel
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentPanel.setBackground(BACKGROUND_COLOR);
+
+        // Title
+        JLabel titleLabel = new JLabel("Edit Grade for " + subject);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(TEXT_COLOR);
+
+        // Form panel
+        JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        formPanel.setOpaque(false);
+
+        // Grade selection
+        JLabel markLabel = new JLabel("Grade:");
+        markLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        String[] marks = {"A", "B", "C", "D", "F"};
+        JComboBox<String> markCombo = new JComboBox<>(marks);
+        // Set current mark
+        for (int i = 0; i < marks.length; i++) {
+            if (marks[i].charAt(0) == currentMark) {
+                markCombo.setSelectedIndex(i);
+                break;
+            }
+        }
+
+        formPanel.add(markLabel);
+        formPanel.add(markCombo);
+
+        // Comment field
+        JLabel commentLabel = new JLabel("Comments:");
+        commentLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JTextArea commentArea = new JTextArea(currentComment);
+        commentArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        commentArea.setLineWrap(true);
+        commentArea.setWrapStyleWord(true);
+
+        JScrollPane scrollPane = new JScrollPane(commentArea);
+        scrollPane.setPreferredSize(new Dimension(200, 100));
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        cancelButton.setBackground(Color.LIGHT_GRAY);
+        cancelButton.setForeground(Color.BLACK);
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        JButton saveButton = new JButton("Save Changes");
+        saveButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        saveButton.setBackground(SECONDARY_COLOR);
+        saveButton.setForeground(Color.WHITE);
+        saveButton.addActionListener(e -> {
+            // Get the new mark and comment
+            char newMark = ((String) markCombo.getSelectedItem()).charAt(0);
+            String newComment = commentArea.getText().trim();
+
+            // Update the grade in the database
+            try {
+                GradeDAO gradeDAO = new GradeDAO();
+
+                // Find the grade ID first
+                List<Grade> grades = gradeDAO.getGradesByStudent(studentId);
+                int gradeId = -1;
+
+                for (Grade grade : grades) {
+                    if (grade.getSubject().equals(subject) && grade.getMark() == currentMark) {
+                        gradeId = grade.getGradeId();
+                        break;
+                    }
+                }
+
+                if (gradeId == -1) {
+                    throw new Exception("Could not find the grade in the database");
+                }
+
+                // Update the grade
+                boolean success = gradeDAO.updateGrade(gradeId, newMark, newComment);
+
+                if (success) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Grade updated successfully!",
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Refresh the grades table
+                    JTable gradesTable = findGradesTable(gradesPanel);
+                    if (gradesTable != null) {
+                        String selectedItem = (String) studentComboBox.getSelectedItem();
+                        int selectedStudentId = studentIdMap.get(selectedItem);
+                        loadGradesForStudent(new Student(selectedStudentId, 0, "", "", "", 0),
+                                (DefaultTableModel) gradesTable.getModel());
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Failed to update grade",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(dialog,
+                        "Error updating grade: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+
+        // Assemble the dialog
+        JPanel formContainerPanel = new JPanel(new BorderLayout(0, 10));
+        formContainerPanel.setOpaque(false);
+        formContainerPanel.add(formPanel, BorderLayout.NORTH);
+
+        JPanel commentPanel = new JPanel(new BorderLayout(0, 5));
+        commentPanel.setOpaque(false);
+        commentPanel.add(commentLabel, BorderLayout.NORTH);
+        commentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        formContainerPanel.add(commentPanel, BorderLayout.CENTER);
+
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        contentPanel.add(formContainerPanel, BorderLayout.CENTER);
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(contentPanel);
+        dialog.setVisible(true);
     }
 
     /**
@@ -1251,11 +1364,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     };
                     tableModel.addRow(rowData);
                 }
-
-                // Show success message
-                JOptionPane.showMessageDialog(this,
-                        "Loaded " + grades.size() + " grades for " + student.getFirstName() + " " + student.getLastName(),
-                        "Grades Loaded", JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1579,45 +1687,60 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         buttonPanel.setOpaque(false);
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
-
         addAbsenceButton = createActionButton("Record Absence", e -> {
-            if (absenceStudentComboBox.getSelectedIndex() > 0) {
-                // Get the student data to pass to the form
-                String selectedItem = (String) absenceStudentComboBox.getSelectedItem();
-                int studentId = absenceStudentIdMap.get(selectedItem);
-
-                // Show AbsenceForm (you could modify this to create a custom form)
-                AbsenceForm form = new AbsenceForm(classId);
-                form.setTitle("Record Absence for Student ID: " + studentId);
-                form.setVisible(true);
-
-                // You could display a message about the current limitation
-                JOptionPane.showMessageDialog(this,
-                        "Recording absence for Student ID: " + studentId + "\n" +
-                                "Note: The AbsenceForm needs modification to pre-select students.",
-                        "Record Absence", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a student first",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            }
+            // Show AbsenceForm
+            AbsenceForm form = new AbsenceForm(classId);
+            form.setTitle("Record Absence");
+            form.setVisible(true);
         });
 
-        viewAbsencesButton = createActionButton("Refresh Absences", e -> {
+        JButton changeStatusButton = createActionButton("Change Status", e -> {
             if (absenceStudentComboBox.getSelectedIndex() > 0) {
-                // Show loading indicator
-                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                int selectedRow = absencesTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(this,
+                            "Please select an absence to update",
+                            "No Selection", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
 
-                try {
-                    // Get the selected student ID
-                    String selectedItem = (String) absenceStudentComboBox.getSelectedItem();
-                    int studentId = absenceStudentIdMap.get(selectedItem);
+                // Get absence ID and current status
+                int absenceId = (int) absencesTable.getValueAt(selectedRow, 0);
+                String currentStatus = (String) absencesTable.getValueAt(selectedRow, 3);
+                boolean isCurrentlyExcused = "Excused".equals(currentStatus);
 
-                    // Load absences for the student
-                    loadAbsencesForStudent(studentId, absencesTableModel);
-                } finally {
-                    // Restore cursor
-                    setCursor(Cursor.getDefaultCursor());
+                // Confirm the status change
+                String newStatus = isCurrentlyExcused ? "Unexcused" : "Excused";
+                int confirm = JOptionPane.showConfirmDialog(this,
+                        "Change absence status to " + newStatus + "?",
+                        "Confirm Status Change", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // Update the status in the database
+                    try {
+                        AbsenceDAO absenceDAO = new AbsenceDAO();
+                        boolean success = absenceDAO.updateAbsenceStatus(absenceId, !isCurrentlyExcused);
+
+                        if (success) {
+                            JOptionPane.showMessageDialog(this,
+                                    "Absence status updated successfully",
+                                    "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                            // Refresh the table
+                            String selectedItem = (String) absenceStudentComboBox.getSelectedItem();
+                            int studentId = absenceStudentIdMap.get(selectedItem);
+                            loadAbsencesForStudent(studentId, (DefaultTableModel) absencesTable.getModel());
+                        } else {
+                            JOptionPane.showMessageDialog(this,
+                                    "Failed to update absence status",
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this,
+                                "Error updating absence status: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             } else {
                 JOptionPane.showMessageDialog(this,
@@ -1625,6 +1748,7 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                         "Information", JOptionPane.INFORMATION_MESSAGE);
             }
         });
+
         deleteAbsenceButton = createActionButton("Delete Absence", e -> {
             if (absenceStudentComboBox.getSelectedIndex() > 0) {
                 int selectedRow = absencesTable.getSelectedRow();
@@ -1635,29 +1759,59 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     return;
                 }
 
-                String dateStr = (String) absencesTable.getValueAt(selectedRow, 0);
-                int studentId = absenceStudentIdMap.get(absenceStudentComboBox.getSelectedItem());
-
-                int confirm = JOptionPane.showConfirmDialog(this,
-                        "Delete absence on " + dateStr + "?",
+                //  Confirmation dialog
+                int confirmResult = JOptionPane.showConfirmDialog(this,
+                        "Are you sure you want to delete this absence?",
                         "Confirm Delete", JOptionPane.YES_NO_OPTION);
+                if (confirmResult == JOptionPane.YES_OPTION) {
 
-                if (confirm == JOptionPane.YES_OPTION) {
-                    deleteAbsence(studentId, dateStr);
-                    loadAbsencesForStudent(studentId, absencesTableModel);
+                    // Get the Absence ID from the selected row
+                    int absenceId = (int) absencesTable.getValueAt(selectedRow, 0);
+
+                    try {
+                        AbsenceDAO absenceDAO = new AbsenceDAO();
+                        absenceDAO.deleteAbsence(absenceId);
+
+                        JOptionPane.showMessageDialog(this,
+                                "Absence deleted successfully",
+                                "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                        // Refresh the table
+                        String selectedItem = (String) absenceStudentComboBox.getSelectedItem();
+                        int studentId = absenceStudentIdMap.get(selectedItem);
+                        loadAbsencesForStudent(studentId, (DefaultTableModel) absencesTable.getModel());
+
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this,
+                                "Error deleting absence: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        ex.printStackTrace();
+                    }
                 }
+
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Please select a student first",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Please select a student",
+                        "No Student Selected", JOptionPane.WARNING_MESSAGE);
             }
         });
+        JButton refreshAbsencesButton = createActionButton("Refresh Absences", e -> {
+            if (absenceStudentComboBox.getSelectedIndex() > 0) {
+                String selectedStudent = (String) absenceStudentComboBox.getSelectedItem();
+                int studentId = studentIdMap.get(selectedStudent);
+                loadAbsencesForStudent(studentId, (DefaultTableModel) absencesTable.getModel());
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a student", "No Student Selected", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
         // Add the button to the panel
         deleteAbsenceButton.setBackground(ACCENT_COLOR);
         deleteAbsenceButton.setForeground(Color.WHITE);
         buttonPanel.add(deleteAbsenceButton);
         buttonPanel.add(addAbsenceButton);
-        buttonPanel.add(viewAbsencesButton);
+        buttonPanel.add(changeStatusButton);
+        buttonPanel.add(refreshAbsencesButton);
 
         mainContent.add(buttonPanel);
 
@@ -1743,10 +1897,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     tableModel.addRow(rowData);
                 }
 
-                // Show success message
-                JOptionPane.showMessageDialog(this,
-                        "Loaded " + absences.size() + " absences for student ID: " + studentId,
-                        "Absences Loaded", JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1794,7 +1944,7 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         statusLabel.setForeground(TEXT_COLOR);
 
-        String[] statuses = {"All Assignments", "Active", "Completed", "Overdue"};
+        String[] statuses = {"All Assignments", "Active", "Completed"};
         JComboBox<String> statusComboBox = new JComboBox<>(statuses);
         statusComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         statusComboBox.setBorder(BorderFactory.createLineBorder(new Color(218, 220, 224), 1, true));
@@ -1872,8 +2022,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                 String status = (String) value;
                 if ("Completed".equals(status)) {
                     c.setForeground(new Color(46, 204, 113)); // Green
-                } else if ("Overdue".equals(status)) {
-                    c.setForeground(new Color(231, 76, 60)); // Red
                 } else {
                     c.setForeground(new Color(52, 152, 219)); // Blue
                 }
@@ -1923,8 +2071,8 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         addHomeworkButton = createActionButton("Add Homework", e -> {
-            // Open a new form to add homework
-            HomeworkForm form = new HomeworkForm(classId);
+            // Open a new form to add homework with the required parameters
+            HomeworkForm form = new HomeworkForm(classId, teacher, currentUser);
             form.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosed(java.awt.event.WindowEvent e) {
@@ -1953,7 +2101,8 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                 Optional<Homework> homeworkOpt = homeworkDAO.getHomeworkById(homeworkId);
                 if (homeworkOpt.isPresent()) {
                     Homework homework = homeworkOpt.get();
-                    HomeworkForm form = new HomeworkForm(classId, homework);
+                    // Update this line to pass the teacher and currentUser
+                    HomeworkForm form = new HomeworkForm(classId, homework, teacher, currentUser);
                     form.addWindowListener(new java.awt.event.WindowAdapter() {
                         @Override
                         public void windowClosed(java.awt.event.WindowEvent e) {
@@ -2017,10 +2166,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
             }
         });
 
-        JButton refreshButton = createActionButton("Refresh", e -> {
-            loadHomeworkData(homeworkTableModel);
-        });
-
         // Styling for delete button to use accent color
         deleteHomeworkButton.setBackground(ACCENT_COLOR);
         deleteHomeworkButton.setForeground(Color.WHITE);
@@ -2029,7 +2174,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         buttonPanel.add(deleteHomeworkButton);
         buttonPanel.add(editHomeworkButton);
         buttonPanel.add(addHomeworkButton);
-        buttonPanel.add(refreshButton);
 
         mainContent.add(buttonPanel);
 
@@ -2077,11 +2221,11 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
             HomeworkDAO homeworkDAO = new HomeworkDAO();
             List<Homework> homeworkList = homeworkDAO.getHomeworkByClass(classId);
 
-            if (homeworkList.isEmpty()) {
+            /*if (homeworkList.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "No homework assignments found for this class",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            } else {
+                        "Information", JOptionPane.INFORMATION_MESSAGE); */
+
                 // Format dates
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -2094,8 +2238,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     String status;
                     if (homework.isCompleted()) {
                         status = "Completed";
-                    } else if (homework.getDueDate().before(currentDate)) {
-                        status = "Overdue";
                     } else {
                         status = "Active";
                     }
@@ -2108,7 +2250,7 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                             status
                     };
                     tableModel.addRow(rowData);
-                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -2122,7 +2264,7 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
      * Filters homework table by status
      *
      * @param tableModel The table model to filter
-     * @param status The status to filter by (All Assignments, Active, Completed, Overdue)
+     * @param status The status to filter by (All Assignments, Active, Completed)
      */
     private void filterHomeworkByStatus(DefaultTableModel tableModel, String status) {
         if ("All Assignments".equals(status)) {
@@ -2149,8 +2291,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     String homeworkStatus;
                     if (homework.isCompleted()) {
                         homeworkStatus = "Completed";
-                    } else if (homework.getDueDate().before(currentDate)) {
-                        homeworkStatus = "Overdue";
                     } else {
                         homeworkStatus = "Active";
                     }
@@ -2212,8 +2352,6 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                         String status;
                         if (homework.isCompleted()) {
                             status = "Completed";
-                        } else if (homework.getDueDate().before(currentDate)) {
-                            status = "Overdue";
                         } else {
                             status = "Active";
                         }
@@ -2844,8 +2982,8 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         else if (source == refreshStudentsButton) {
             loadStudentsData();
         } else if (source == addStudentButton) {
-            AddStudentForm addStudentForm = new AddStudentForm();
-            addStudentForm.setVisible(true);
+            AddStudentForm form = new AddStudentForm(classId);
+            form.setVisible(true);
         } else if (source == editStudentButton) {
             int selectedRow = studentsTable.getSelectedRow();
             if (selectedRow == -1) {
@@ -2904,10 +3042,33 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
                     "Confirm Deletion", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (result == JOptionPane.YES_OPTION) {
-                // Delete student (placeholder)
-                JOptionPane.showMessageDialog(this,
-                        "Deleting student with ID: " + studentId + "\nThis feature is not yet implemented.",
-                        "Delete Student", JOptionPane.INFORMATION_MESSAGE);
+                //  Delete student from the database
+                StudentDAO studentDAO = new StudentDAO();
+                if (studentDAO.deleteStudent(studentId)) {
+                    JOptionPane.showMessageDialog(
+                            studentsPanel,
+                            "Student deleted successfully.",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    // Refresh the student table
+                    loadStudentsData();
+                } else {
+                    JOptionPane.showMessageDialog(
+                            studentsPanel,
+                            "Failed to delete student.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+            else {
+                JOptionPane.showMessageDialog(
+                        studentsPanel,
+                        "Please select a student to delete.",
+                        "Information",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
             }
         }
     }
@@ -2933,75 +3094,5 @@ public class HorizontalTeacherDashboard extends JFrame implements ActionListener
         }
 
         return null;
-    }
-    private void deleteAbsence(int studentId, String dateStr) {
-        try {
-            // Get all absences for this student
-            AbsenceDAO dao = new AbsenceDAO();
-            List<Absence> absences = dao.getAbsencesByStudent(studentId);
-
-            // Find the absence with the matching date
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date targetDate = null;
-            try {
-                targetDate = sdf.parse(dateStr);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this,
-                        "Error parsing date: " + dateStr,
-                        "Date Format Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // Find the matching absence
-            Absence targetAbsence = null;
-            for (Absence absence : absences) {
-                // Compare dates by formatting to string to avoid time component issues
-                String absenceDateStr = sdf.format(absence.getAbsenceDate());
-                if (absenceDateStr.equals(dateStr)) {
-                    targetAbsence = absence;
-                    break;
-                }
-            }
-
-            if (targetAbsence == null) {
-                JOptionPane.showMessageDialog(this,
-                        "Could not find absence record for date: " + dateStr,
-                        "Record Not Found", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // First, delete related excuse records
-            int absenceId = targetAbsence.getAbsenceId();
-            try (Connection connection = DatabaseConnection.getConnection();
-                 PreparedStatement ps = connection.prepareStatement("DELETE FROM excuse WHERE absence_id = ?")) {
-                ps.setInt(1, absenceId);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                throw new SQLException("Failed to delete related excuse records: " + e.getMessage(), e);
-            }
-
-            // Now delete the absence
-            if (dao.deleteAbsence(absenceId)) {
-                JOptionPane.showMessageDialog(this,
-                        "Absence deleted successfully",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-
-                // Find the absences table
-                JTable absencesTable = findAbsencesTable(absencesPanel);
-                if (absencesTable != null) {
-                    // Refresh the table
-                    loadAbsencesForStudent(studentId, (DefaultTableModel) absencesTable.getModel());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to delete absence",
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Error deleting absence: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
     }
 }

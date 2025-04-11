@@ -248,6 +248,40 @@ public class ParentDAO {
     }
 
     /**
+     * Gets all parents with their names from the database
+     *
+     * @return A list of ParentDetailsDTO objects containing parent info with names
+     * @throws SQLException If a database error occurs
+     */
+    public List<ParentDetailsDTO> getAllParentsWithNames() throws SQLException {
+        List<ParentDetailsDTO> parentsList = new ArrayList<>();
+        String sql = "SELECT p.parent_id, p.user_id, p.number_of_children, u.full_name " +
+                "FROM parent p " +
+                "JOIN user u ON p.user_id = u.user_id";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                int parentId = resultSet.getInt("parent_id");
+                int userId = resultSet.getInt("user_id");
+                int numberOfChildren = resultSet.getInt("number_of_children");
+                String fullName = resultSet.getString("full_name");
+
+                Parent parent = new Parent(parentId, userId, numberOfChildren);
+                // Create a minimal User object with just the name
+                User user = new User(fullName, "", "", null, "", "");
+                user.setUserId(userId);
+
+                parentsList.add(new ParentDetailsDTO(parent, user));
+            }
+        }
+
+        return parentsList;
+    }
+
+    /**
      * Helper method to map ResultSet to Parent object.
      *
      * @param rs The ResultSet containing parent data

@@ -120,7 +120,7 @@ public class AbsenceDAOTest {
     }
 
     @Test
-    public void testGetAbsencesByStatus() {
+    public void testGetAbsencesByStatus() throws SQLException {
         // Test retrieving absences by status
         List<Absence> unexcusedAbsences = absenceDAO.getAbsencesByStatus(false);
 
@@ -159,7 +159,7 @@ public class AbsenceDAOTest {
     }
 
     @Test
-    public void testUpdateAbsenceStatus() {
+    public void testUpdateAbsenceStatus() throws SQLException {
         // Test updating just the absence status
         boolean updated = absenceDAO.updateAbsenceStatus(testAbsenceId, true);
         assertTrue(updated, "Absence status update should succeed");

@@ -110,6 +110,21 @@ public class AddStudentForm extends JFrame implements ActionListener {
         add(mainPanel);
     }
 
+    /**
+     * Constructor 2 - initializes the form with a specific class ID
+     * @param presetClassId The class ID to preset (typically the teacher's class)
+     */
+    public AddStudentForm(int presetClassId) {
+        // Call the default constructor to set up the form
+        this();
+
+        // Set the class ID spinner to the teacher's class ID
+        classIdSpinner.setValue(presetClassId);
+
+        // Optionally make the field read-only since it's predetermined
+        classIdSpinner.setEnabled(false);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == saveButton) {
@@ -149,8 +164,7 @@ public class AddStudentForm extends JFrame implements ActionListener {
                     "Student added successfully with ID: " + studentId,
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
-            // Clear fields
-            clearFields();
+            dispose();
         } catch (SQLException ex) {
             statusLabel.setText("Database error: " + ex.getMessage());
             ex.printStackTrace();
@@ -216,4 +230,6 @@ public class AddStudentForm extends JFrame implements ActionListener {
         parentIdSpinner.setValue(1);
         statusLabel.setText("");
     }
+
+
 }

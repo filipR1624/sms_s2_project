@@ -228,6 +228,11 @@ public class RegistrationForm extends JFrame implements ActionListener {
             return;
         }
 
+        if (!fullName.matches("^[A-Za-z ]+$")) {
+            statusLabel.setText("Invalid name format");
+            return;
+        }
+
         if (!password.equals(confirmPassword)) {
             statusLabel.setText("Passwords do not match");
             return;

@@ -2,7 +2,7 @@ package gui;
 
 import dao.UserDAO;
 import model.User;
-import util.PasswordHasher;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.swing.*;
 import java.awt.*;
@@ -172,7 +172,7 @@ public class LoginForm extends JFrame implements ActionListener {
                 User user = userOptional.get();
 
                 // Use secure password verification
-                boolean passwordMatches = PasswordHasher.verifyPassword(password, user.getPassword());
+                boolean passwordMatches = BCrypt.checkpw(password, user.getPassword());
 
                 if (passwordMatches) {
                     // Successful login
@@ -206,7 +206,7 @@ public class LoginForm extends JFrame implements ActionListener {
      */
     private void updatePasswordToHashed(User user, String plainPassword) {
         try {
-            String hashedPassword = PasswordHasher.hashPassword(plainPassword);
+            String hashedPassword = BCrypt.hashpw(plainPassword, BCrypt.gensalt(12));
             user.setPassword(hashedPassword);
 
             UserDAO userDAO = new UserDAO();

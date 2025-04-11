@@ -64,7 +64,7 @@ public class ParentDashboard extends JFrame implements ActionListener {
     private JTable childrenTable;
     private DefaultTableModel childrenTableModel;
     private JButton viewChildButton;
-    private JButton refreshChildrenButton;
+
 
     // Grades tab components
     private JPanel gradesPanel;
@@ -75,7 +75,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
 
     // Absences tab components
     private JPanel absencesPanel;
-    private JButton viewAbsencesButton;
     private JButton addExcuseButton;
 
     // Homework tab components
@@ -647,10 +646,10 @@ public class ParentDashboard extends JFrame implements ActionListener {
         buttonPanel.setOpaque(false);
 
         viewChildButton = createControlButton("View Details", "view");
-        refreshChildrenButton = createControlButton("Refresh", "refresh");
+
 
         buttonPanel.add(viewChildButton);
-        buttonPanel.add(refreshChildrenButton);
+
         controlPanel.add(buttonPanel, BorderLayout.WEST);
 
         // Top panel with title and controls
@@ -935,39 +934,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
-        JButton refreshGradesButton = createActionButton("Refresh Grades", e -> {
-            if (childComboBox.getSelectedIndex() > 0) {
-                // Show loading indicator
-                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-                try {
-                    // Get the selected child
-                    String selectedItem = (String) childComboBox.getSelectedItem();
-                    int studentId = childIdMap.get(selectedItem);
-                    StudentDAO studentDAO = new StudentDAO();
-                    Optional<Student> studentOpt = studentDAO.getStudentById(studentId);
-
-                    if (studentOpt.isPresent()) {
-                        // Find and update the grades table
-                        Component[] components = gradesPanel.getComponents();
-                        for (Component comp : components) {
-                            if (comp instanceof Container) {
-                                findAndUpdateGradesTable((Container) comp, studentOpt.get());
-                            }
-                        }
-                    }
-                } finally {
-                    // Restore cursor
-                    setCursor(Cursor.getDefaultCursor());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a child first",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-
-        buttonPanel.add(refreshGradesButton);
         mainContent.add(buttonPanel);
 
         // Add all to the main grades panel
@@ -1167,8 +1133,8 @@ public class ParentDashboard extends JFrame implements ActionListener {
 
                 // Show success message with statistics
                 JOptionPane.showMessageDialog(this,
-                        String.format("Loaded %d grades for %s %s\nAverage: %.1f\nBest Grade: %c\nWorst Grade: %c",
-                                grades.size(), student.getFirstName(), student.getLastName(),
+                        String.format("Loaded grades for %s %s\nAverage: %.1f\nBest Grade: %c\nWorst Grade: %c",
+                                student.getFirstName(), student.getLastName(),
                                 average, bestGrade, worstGrade),
                         "Grades Loaded", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -1386,28 +1352,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
-        viewAbsencesButton = createActionButton("View Absences", e -> {
-            if (absenceChildComboBox.getSelectedIndex() > 0) {
-                // Show loading indicator
-                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-                try {
-                    // Get the selected student ID
-                    String selectedItem = (String) absenceChildComboBox.getSelectedItem();
-                    int studentId = absenceChildIdMap.get(selectedItem);
-
-                    // Load absences for the student
-                    loadAbsencesForStudent(studentId, absencesTableModel);
-                } finally {
-                    // Restore cursor
-                    setCursor(Cursor.getDefaultCursor());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a child first",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
 
         addExcuseButton = createActionButton("Add Excuse", e -> {
             if (absenceChildComboBox.getSelectedIndex() > 0) {
@@ -1443,7 +1387,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
         });
 
         buttonPanel.add(addExcuseButton);
-        buttonPanel.add(viewAbsencesButton);
 
         mainContent.add(buttonPanel);
 
@@ -1514,7 +1457,7 @@ public class ParentDashboard extends JFrame implements ActionListener {
         browseButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         browseButton.addActionListener(e -> {
             JOptionPane.showMessageDialog(dialog,
-                    "Document upload functionality would be implemented here",
+                    "Document upload functionality coming soon",
                     "Feature Coming Soon", JOptionPane.INFORMATION_MESSAGE);
         });
 
@@ -1810,10 +1753,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
                     tableModel.addRow(rowData);
                 }
 
-                // Show success message
-                JOptionPane.showMessageDialog(this,
-                        "Loaded " + absences.size() + " absences for student ID: " + studentId,
-                        "Absences Loaded", JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -2057,19 +1996,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
-        // Refresh button
-        viewHomeworkButton = createActionButton("Refresh", e -> {
-            if (homeworkChildComboBox.getSelectedIndex() > 0) {
-                String selectedName = (String) homeworkChildComboBox.getSelectedItem();
-                int studentId = homeworkChildMap.get(selectedName);
-                loadHomeworkData(studentId, homeworkTableModel);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a child first",
-                        "Information", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-
         // Mark as completed button (for parent to verify homework is complete)
         JButton markCompletedButton = createActionButton("Mark as Completed", e -> {
             int selectedRow = homeworkTable.getSelectedRow();
@@ -2147,9 +2073,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
                 }
             }
         });
-
-
-        buttonPanel.add(viewHomeworkButton);
 
         mainContent.add(buttonPanel);
 
@@ -2590,7 +2513,7 @@ public class ParentDashboard extends JFrame implements ActionListener {
         emergencyLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         emergencyLabel.setForeground(TEXT_COLOR);
 
-        JTextField emergencyField = new JTextField(""); // This would be loaded from a separate table in a real app
+        JTextField emergencyField = new JTextField("");
         emergencyField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         emergencyField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
@@ -3107,9 +3030,7 @@ public class ParentDashboard extends JFrame implements ActionListener {
         }
 
         // Children panel actions
-        else if (source == refreshChildrenButton) {
-            loadChildrenData();
-        } else if (source == viewChildButton) {
+        else if (source == viewChildButton) {
             int selectedRow = childrenTable.getSelectedRow();
             if (selectedRow == -1) {
                 JOptionPane.showMessageDialog(this,
@@ -3246,7 +3167,6 @@ public class ParentDashboard extends JFrame implements ActionListener {
         // Add stats to panel
         addStatRow(statsPanel, "Grades Avg:", gradeAvg);
         addStatRow(statsPanel, "Absences:", absenceCount);
-        addStatRow(statsPanel, "Homework:", "2 pending"); // Would calculate from real data
 
         // Add components to info panel
         infoPanel.add(photoPanel);
@@ -3330,26 +3250,10 @@ public class ParentDashboard extends JFrame implements ActionListener {
 
         absencesTab.add(new JScrollPane(absencesTable), BorderLayout.CENTER);
 
-        // Homework tab - would load real data in a complete implementation
-        JPanel homeworkTab = new JPanel(new BorderLayout());
-        homeworkTab.setBackground(Color.WHITE);
-
-        String[] homeworkColumns = {"Assignment", "Due Date", "Status"};
-        DefaultTableModel homeworkModel = new DefaultTableModel(homeworkColumns, 0);
-        JTable homeworkTable = new JTable(homeworkModel);
-        homeworkTable.setRowHeight(30);
-
-        // Add sample data
-        homeworkModel.addRow(new Object[]{"Math Problems", "2023-04-15", "Completed"});
-        homeworkModel.addRow(new Object[]{"Science Project", "2023-04-20", "Pending"});
-        homeworkModel.addRow(new Object[]{"History Essay", "2023-04-18", "Pending"});
-
-        homeworkTab.add(new JScrollPane(homeworkTable), BorderLayout.CENTER);
 
         // Add tabs to tabbed pane
         activityTabs.addTab("Grades", gradesTab);
         activityTabs.addTab("Absences", absencesTab);
-        activityTabs.addTab("Homework", homeworkTab);
 
         // Set preferred size to make sure it expands properly
         activityTabs.setPreferredSize(new Dimension(400, 250));
@@ -3371,7 +3275,7 @@ public class ParentDashboard extends JFrame implements ActionListener {
         printButton.setFocusPainted(false);
         printButton.addActionListener(e -> {
             JOptionPane.showMessageDialog(dialog,
-                    "Print functionality would be implemented here",
+                    "Print functionality coming soon",
                     "Print Report", JOptionPane.INFORMATION_MESSAGE);
         });
 

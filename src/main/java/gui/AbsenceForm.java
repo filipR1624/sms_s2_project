@@ -7,7 +7,6 @@ import model.Student;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,10 +28,6 @@ public class AbsenceForm extends JFrame implements ActionListener {
     private JButton closeButton;
     private JLabel statusLabel;
 
-    // Table for displaying absences
-    private JTable absencesTable;
-    private AbsenceTableModel tableModel;
-
     // Store student IDs corresponding to combo box index
     private int[] studentIds;
 
@@ -42,7 +37,7 @@ public class AbsenceForm extends JFrame implements ActionListener {
     public AbsenceForm(int classGroupId) {
         // Set up the frame
         setTitle("Manage Student Absences");
-        setSize(600, 500);
+        setSize(600, 300);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null); // Center on screen
 
@@ -109,15 +104,15 @@ public class AbsenceForm extends JFrame implements ActionListener {
         topPanel.add(statusLabel, BorderLayout.SOUTH);
         topPanel.add(buttonPanel, BorderLayout.SOUTH);
 
+        // Create a panel for status and buttons
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(statusLabel, BorderLayout.NORTH);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        topPanel.add(formPanel, BorderLayout.CENTER);
+        topPanel.add(bottomPanel, BorderLayout.SOUTH);
+
         mainPanel.add(topPanel, BorderLayout.NORTH);
-
-        // Create table model and table
-        tableModel = new AbsenceTableModel();
-        absencesTable = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(absencesTable);
-
-        // Add table to center of main panel
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Add main panel to frame
         add(mainPanel);
@@ -155,31 +150,6 @@ public class AbsenceForm extends JFrame implements ActionListener {
             addAbsence();
         } else if (e.getSource() == closeButton) {
             dispose();
-        } else if (e.getSource() == studentCombo) {
-            // When student selection changes, load their absences
-            loadStudentAbsences();
-        }
-    }
-
-    /**
-     * Loads the selected student's absences into the table
-     */
-    private void loadStudentAbsences() {
-        int selectedIndex = studentCombo.getSelectedIndex();
-
-        if (selectedIndex >= 0 && selectedIndex < studentIds.length && studentIds[selectedIndex] != -1) {
-            int studentId = studentIds[selectedIndex];
-
-            try {
-                AbsenceDAO absenceDAO = new AbsenceDAO();
-                List<Absence> absences = absenceDAO.getAbsencesByStudent(studentId);
-                tableModel.setAbsences(absences);
-            } catch (Exception e) {
-                e.printStackTrace();
-                statusLabel.setText("Error loading absences: " + e.getMessage());
-            }
-        } else {
-            tableModel.setAbsences(null);
         }
     }
 
@@ -224,11 +194,7 @@ public class AbsenceForm extends JFrame implements ActionListener {
                     "Absence recorded successfully",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
-            // Refresh table
-            loadStudentAbsences();
-
-            // Clear fields
-            clearFields();
+            dispose();
         } catch (ParseException e) {
             statusLabel.setText("Invalid date format. Please use YYYY-MM-DD");
         } catch (SQLException e) {
@@ -281,60 +247,4 @@ public class AbsenceForm extends JFrame implements ActionListener {
         return true;
     }
 
-    /**
-     * Clears input fields
-     */
-    private void clearFields() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        dateField.setText(sdf.format(new Date())); // Reset to today
-        descriptionField.setText("");
-        excusedCheckBox.setSelected(false);
-        statusLabel.setText("");
-    }
-
-    /**
-     * Table model for displaying absences
-     */
-    private class AbsenceTableModel extends AbstractTableModel {
-        private final String[] columnNames = {"ID", "Date", "Description", "Status"};
-        private List<Absence> absences;
-
-        public void setAbsences(List<Absence> absences) {
-            this.absences = absences;
-            fireTableDataChanged();
-        }
-
-        @Override
-        public int getRowCount() {
-            return absences == null ? 0 : absences.size();
-        }
-
-        @Override
-        public int getColumnCount() {
-            return columnNames.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columnNames[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            if (absences == null || rowIndex >= absences.size()) {
-                return null;
-            }
-
-            Absence absence = absences.get(rowIndex);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-            switch (columnIndex) {
-                case 0: return absence.getAbsenceId();
-                case 1: return sdf.format(absence.getAbsenceDate());
-                case 2: return absence.getDescription();
-                case 3: return absence.isStatus() ? "Excused" : "Unexcused";
-                default: return null;
-            }
-        }
-    }
 }

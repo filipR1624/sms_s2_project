@@ -47,6 +47,10 @@ public class EditStudentForm extends JFrame {
         saveButton.addActionListener(e -> saveStudent());
         panel.add(saveButton);
 
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dispose());
+        panel.add(cancelButton);
+
         add(panel);
     }
 

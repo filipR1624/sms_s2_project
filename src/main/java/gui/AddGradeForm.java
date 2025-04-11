@@ -4,6 +4,7 @@ import dao.GradeDAO;
 import dao.StudentDAO;
 import model.Grade;
 import model.Student;
+import model.Teacher;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -126,6 +127,17 @@ public class AddGradeForm extends JFrame implements ActionListener {
 
         // Add main panel to frame
         add(mainPanel);
+    }
+
+    public AddGradeForm(int classGroupId, Teacher teacher) {
+        // Call the existing constructor first
+        this(classGroupId);
+
+        // Now set the teacher ID and disable editing
+        if (teacher != null) {
+            teacherIdSpinner.setValue(teacher.getTeacherId());
+            teacherIdSpinner.setEnabled(false); // Make it read-only
+        }
     }
 
     /**

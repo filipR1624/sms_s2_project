@@ -176,27 +176,26 @@ public class GradeDAO {
     }
 
     /**
-     * Updates an existing grade record.
+     * Updates a grade's mark and comment
      *
-     * @param grade The grade object with updated information
+     * @param gradeId The ID of the grade to update
+     * @param mark The new mark for the grade
+     * @param comment The new comment for the grade
      * @return true if the update was successful, false otherwise
+     * @throws SQLException If a database error occurs
      */
-    public boolean updateGrade(Grade grade) {
+    public boolean updateGrade(int gradeId, char mark, String comment) throws SQLException {
+        String sql = "UPDATE grade SET mark = ?, comment = ? WHERE grade_id = ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(UPDATE_SQL)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            ps.setString(1, String.valueOf(grade.getMark()));
-            ps.setString(2, grade.getSubject());
-            ps.setInt(3, grade.getStudentId());
-            ps.setDate(4, new java.sql.Date(grade.getGradeDate().getTime()));
-            ps.setString(5, grade.getComment());
-            ps.setInt(6, grade.getTeacherId());
-            ps.setInt(7, grade.getGradeId());
+            statement.setString(1, String.valueOf(mark));
+            statement.setString(2, comment);
+            statement.setInt(3, gradeId);
 
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating grade with ID " + grade.getGradeId() + ": " + e.getMessage());
-            return false;
+            int rowsAffected = statement.executeUpdate();
+            return rowsAffected > 0;
         }
     }
 
@@ -303,4 +302,5 @@ public class GradeDAO {
         ps.setString(5, grade.getComment());
         ps.setInt(6, grade.getTeacherId());
     }
+
 }

@@ -176,24 +176,26 @@ public class AbsenceDAO {
         }
     }
 
+
     /**
      * Updates the status of an absence.
      *
-     * @param absenceId The ID of the absence
+     * @param absenceId The ID of the absence to update
      * @param status The new status (true = excused, false = unexcused)
      * @return true if the update was successful, false otherwise
+     * @throws SQLException If a database error occurs
      */
-    public boolean updateAbsenceStatus(int absenceId, boolean status) {
+    public boolean updateAbsenceStatus(int absenceId, boolean status) throws SQLException {
+        String sql = "UPDATE absence SET status = ? WHERE absence_id = ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(UPDATE_STATUS_SQL)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            ps.setBoolean(1, status);
-            ps.setInt(2, absenceId);
+            statement.setBoolean(1, status);
+            statement.setInt(2, absenceId);
 
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating absence status for ID " + absenceId + ": " + e.getMessage());
-            return false;
+            int rowsAffected = statement.executeUpdate();
+            return rowsAffected > 0;
         }
     }
 

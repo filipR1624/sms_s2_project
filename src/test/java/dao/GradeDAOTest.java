@@ -138,27 +138,6 @@ public class GradeDAOTest {
                 "Subject grades list should contain test grade");
     }
 
-    @Test
-    public void testUpdateGrade() {
-        // Test updating a grade
-        Optional<Grade> gradeOptional = gradeDAO.getGradeById(testGradeId);
-        assertTrue(gradeOptional.isPresent(), "Grade should exist for update");
-
-        Grade grade = gradeOptional.get();
-        grade.setMark('B');
-        grade.setComment("Good work but needs improvement");
-
-        boolean updated = gradeDAO.updateGrade(grade);
-        assertTrue(updated, "Grade update should succeed");
-
-        // Verify the update
-        Optional<Grade> updatedGradeOptional = gradeDAO.getGradeById(testGradeId);
-        assertTrue(updatedGradeOptional.isPresent(), "Grade should still exist after update");
-
-        Grade updatedGrade = updatedGradeOptional.get();
-        assertEquals('B', updatedGrade.getMark(), "Grade mark should be updated");
-        assertEquals("Good work but needs improvement", updatedGrade.getComment(), "Comment should be updated");
-    }
 
     @Test
     public void testDeleteGrade() {

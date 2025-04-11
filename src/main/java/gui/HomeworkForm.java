@@ -2,6 +2,8 @@ package gui;
 
 import dao.HomeworkDAO;
 import model.Homework;
+import model.Teacher; // Import for Teacher class
+import model.User; // Added import for User class
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -25,6 +27,8 @@ public class HomeworkForm extends JFrame implements ActionListener {
     private static final Color TEXT_COLOR = new Color(44, 62, 80);
 
     private int classId;
+    private Teacher currentTeacher; // Field for currently logged-in teacher
+    private User currentUser; // Added field for the User object associated with the teacher
     private Homework homework; // Null for new homework, non-null for editing
     private boolean isEditMode;
 
@@ -40,9 +44,13 @@ public class HomeworkForm extends JFrame implements ActionListener {
      * Constructor for creating a new homework assignment
      *
      * @param classId The class ID for the homework
+     * @param currentTeacher The currently logged-in teacher
+     * @param currentUser The User object associated with the teacher
      */
-    public HomeworkForm(int classId) {
+    public HomeworkForm(int classId, Teacher currentTeacher, User currentUser) {
         this.classId = classId;
+        this.currentTeacher = currentTeacher;
+        this.currentUser = currentUser;
         this.isEditMode = false;
 
         initializeUI("Add New Homework Assignment");
@@ -53,10 +61,45 @@ public class HomeworkForm extends JFrame implements ActionListener {
      *
      * @param classId The class ID
      * @param homework The homework to edit
+     * @param currentTeacher The currently logged-in teacher
+     * @param currentUser The User object associated with the teacher
+     */
+    public HomeworkForm(int classId, Homework homework, Teacher currentTeacher, User currentUser) {
+        this.classId = classId;
+        this.homework = homework;
+        this.currentTeacher = currentTeacher;
+        this.currentUser = currentUser;
+        this.isEditMode = true;
+
+        initializeUI("Edit Homework Assignment");
+    }
+
+    // Add this constructor to HomeworkForm.java to maintain backward compatibility
+    /**
+     * Constructor for creating a new homework assignment (backward compatibility)
+     *
+     * @param classId The class ID for the homework
+     */
+    public HomeworkForm(int classId) {
+        this.classId = classId;
+        this.currentTeacher = null; // Will need to be set manually if needed
+        this.currentUser = null;    // Will need to be set manually if needed
+        this.isEditMode = false;
+
+        initializeUI("Add New Homework Assignment");
+    }
+
+    /**
+     * Constructor for editing an existing homework assignment (backward compatibility)
+     *
+     * @param classId The class ID
+     * @param homework The homework to edit
      */
     public HomeworkForm(int classId, Homework homework) {
         this.classId = classId;
         this.homework = homework;
+        this.currentTeacher = null; // Will need to be set manually if needed
+        this.currentUser = null;    // Will need to be set manually if needed
         this.isEditMode = true;
 
         initializeUI("Edit Homework Assignment");
@@ -88,6 +131,18 @@ public class HomeworkForm extends JFrame implements ActionListener {
         // Create form panel
         JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 15));
         formPanel.setBackground(BACKGROUND_COLOR);
+
+        // Display teacher name (read-only)
+        JLabel teacherLabel = new JLabel("Teacher:");
+        teacherLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        teacherLabel.setForeground(TEXT_COLOR);
+
+        JLabel teacherNameLabel = new JLabel(currentUser.getFullName());
+        teacherNameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        teacherNameLabel.setForeground(TEXT_COLOR);
+
+        formPanel.add(teacherLabel);
+        formPanel.add(teacherNameLabel);
 
         // Assignment date field
         JLabel assignmentDateLabel = new JLabel("Assignment Date (yyyy-MM-dd):");
@@ -268,6 +323,8 @@ public class HomeworkForm extends JFrame implements ActionListener {
                 homework.setDueDate(dueDate);
                 homework.setDescription(description);
                 homework.setStatus(completed);
+                // Set teacher ID if your Homework model has a teacherId field
+                // homework.setTeacherId(currentTeacher.getId());
 
                 boolean updated = homeworkDAO.updateHomework(homework);
 
@@ -280,8 +337,11 @@ public class HomeworkForm extends JFrame implements ActionListener {
                     statusLabel.setText("Failed to update homework assignment");
                 }
             } else {
-                // Create new homework
+                // Create new homework with current teacher
                 Homework newHomework = new Homework(assignmentDate, dueDate, classId, description, completed);
+                // Set teacher ID if your Homework model has a teacherId field
+                // newHomework.setTeacherId(currentTeacher.getId());
+
                 int homeworkId = homeworkDAO.addHomework(newHomework);
 
                 if (homeworkId > 0) {
